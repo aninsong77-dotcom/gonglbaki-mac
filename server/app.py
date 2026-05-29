@@ -268,7 +268,10 @@ def delete_model(name: str):
 # whisper.cpp 모델 관련
 # ════════════════════════════════════════════════════════════════
 
-CPP_MODELS_DIR = Path(r"C:\whisper-models")
+if os.name == "nt":
+    CPP_MODELS_DIR = Path(r"C:\whisper-models")
+else:
+    CPP_MODELS_DIR = Path.home() / "whisper-models"
 
 CPP_MODEL_FILES = {
     "small":    "ggml-small.bin",
@@ -434,28 +437,29 @@ def download_models():
     )
 
 def get_whisper_cpp_exe() -> Path:
-    r"""whisper-cli.exe 경로 반환 — 항상 영문 경로 C:\whisper-bin 우선"""
-    # 영문 고정 경로 (한글 경로 문제 회피)
-    fixed = Path(r"C:\whisper-bin\whisper-cli.exe")
-    if fixed.exists():
-        return fixed
+    """whisper-cli 경로 반환 — OS별로 실행파일 이름 분기"""
+    exe_name = "whisper-cli.exe" if os.name == "nt" else "whisper-cli"
+    if os.name == "nt":
+        fixed = Path(r"C:\whisper-bin\whisper-cli.exe")
+        if fixed.exists():
+            return fixed
     if getattr(sys, 'frozen', False):
-        return Path(sys.executable).resolve().parent / "whisper-bin" / "whisper-cli.exe"
+        return Path(sys.executable).resolve().parent / "whisper-bin" / exe_name
     else:
-        return Path(__file__).resolve().parent / "whisper-bin" / "whisper-cli.exe"
+        return Path(__file__).resolve().parent / "whisper-bin" / exe_name
 
 def convert_to_wav_eng(src_path: str) -> str:
-    """
-    ffmpeg으로 16kHz Mono WAV 변환.
-    임시파일을 C:\\whisper-models\\temp_XXXX.wav 처럼 영문 경로에 저장.
-    """
+    """ffmpeg으로 16kHz Mono WAV 변환. 영문 경로 임시 디렉토리에 저장."""
     import subprocess, uuid
-    tmp_dir = Path(r"C:\whisper-models")
+    if os.name == "nt":
+        tmp_dir = Path(r"C:\whisper-models")
+    else:
+        tmp_dir = Path(tempfile.gettempdir()) / "gongulbaki"
     try:
         tmp_dir.mkdir(parents=True, exist_ok=True)
     except Exception as e:
-        debug_log(f"[오류] C:\\whisper-models 폴더 생성 실패: {e}")
-        raise Exception("임시 폴더를 만들 수 없어요. C드라이브 쓰기 권한이 없거나 보안 프로그램이 차단하고 있을 수 있어요. 설정에서 faster-whisper 엔진으로 바꿔보세요.")
+        debug_log(f"[오류] 임시 폴더 생성 실패: {e}")
+        raise Exception("임시 폴더를 만들 수 없어요. 설정에서 faster-whisper 엔진으로 바꿔보세요.")
     wav_path = str(tmp_dir / f"temp_{uuid.uuid4().hex[:8]}.wav")
     startupinfo = None
     if os.name == "nt":

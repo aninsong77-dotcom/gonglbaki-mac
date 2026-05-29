@@ -57,6 +57,14 @@
       "createStartMenuShortcut": true,
       "shortcutName": "곤글박이"
     },
+    "mac": {
+      "target": "dmg",
+      "icon": "src/assets/gongulbaki-logo.png",
+      "category": "public.app-category.productivity"
+    },
+    "dmg": {
+      "title": "곤글박이"
+    },
     "files": [
       "dist/**/*",
       "electron-main.cjs",

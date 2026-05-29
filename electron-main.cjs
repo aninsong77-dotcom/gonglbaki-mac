@@ -23,8 +23,9 @@ function startPython() {
   let pyBin, pyArgs;
 
   if (isPackaged) {
-    // 패키징된 경우 → app.exe 단독 실행 (인수 없음)
-    pyBin = path.join(process.resourcesPath, "server", "app.exe");
+    // 패키징된 경우 → 서버 실행파일 단독 실행
+    const exeName = process.platform === "darwin" ? "app" : "app.exe";
+    pyBin = path.join(process.resourcesPath, "server", exeName);
     pyArgs = [];
   } else {
     // 개발 모드 → python으로 app.py 실행
