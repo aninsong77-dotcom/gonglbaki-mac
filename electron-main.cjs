@@ -2,12 +2,22 @@ const { app, BrowserWindow, ipcMain, screen } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
 const http = require("http");
+const fs = require("fs");
+const os = require("os");
 
 let mainWindow;
 let splashWindow;
 let pyProcess;
 
 const PORT = 5577;
+const LOG_PATH = path.join(os.homedir(), "gongulbaki_debug.txt");
+
+function electronLog(msg) {
+  const ts = new Date().toISOString().replace("T", " ").slice(0, 19);
+  const line = `[${ts}] [Electron] ${msg}\n`;
+  try { fs.appendFileSync(LOG_PATH, line, "utf8"); } catch {}
+  console.log(msg);
+}
 
 function waitForServer(callback, retries = 30) {
   http.get(`http://127.0.0.1:${PORT}/api/health`, (res) => {
@@ -33,12 +43,17 @@ function startPython() {
     pyArgs = [path.join(__dirname, "server", "app.py")];
   }
 
+  electronLog(`앱 시작: ${pyBin}`);
+  electronLog(`플랫폼: ${process.platform}, 아키텍처: ${process.arch}`);
+
   pyProcess = spawn(pyBin, pyArgs, {
     env: { ...process.env, PORT: String(PORT), ELECTRON: "1" },
     stdio: "pipe",
   });
-  pyProcess.stdout.on("data", (d) => console.log("[py]", d.toString().trim()));
-  pyProcess.stderr.on("data", (d) => console.error("[py-err]", d.toString().trim()));
+  pyProcess.stdout.on("data", (d) => electronLog(`[서버] ${d.toString().trim()}`));
+  pyProcess.stderr.on("data", (d) => electronLog(`[서버 오류] ${d.toString().trim()}`));
+  pyProcess.on("exit", (code) => electronLog(`서버 종료 코드: ${code}`));
+  pyProcess.on("error", (err) => electronLog(`서버 실행 실패: ${err.message}`));
 }
 
 function createSplashWindow() {
