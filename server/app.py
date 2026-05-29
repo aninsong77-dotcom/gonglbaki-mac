@@ -448,6 +448,14 @@ def get_whisper_cpp_exe() -> Path:
     else:
         return Path(__file__).resolve().parent / "whisper-bin" / exe_name
 
+def get_ffmpeg_path() -> str:
+    """번들된 ffmpeg 경로를 우선 반환, 없으면 PATH에서 찾기"""
+    if getattr(sys, 'frozen', False):
+        bundled = Path(sys.executable).resolve().parent / "ffmpeg"
+        if bundled.exists():
+            return str(bundled)
+    return "ffmpeg"
+
 def convert_to_wav_eng(src_path: str) -> str:
     """ffmpeg으로 16kHz Mono WAV 변환. 영문 경로 임시 디렉토리에 저장."""
     import subprocess, uuid
@@ -468,7 +476,7 @@ def convert_to_wav_eng(src_path: str) -> str:
         startupinfo.wShowWindow = subprocess.SW_HIDE
     try:
         subprocess.run(
-            ["ffmpeg", "-y", "-i", src_path,
+            [get_ffmpeg_path(), "-y", "-i", src_path,
              "-ar", "16000", "-ac", "1", "-f", "wav", wav_path],
             capture_output=True, check=True, startupinfo=startupinfo
         )

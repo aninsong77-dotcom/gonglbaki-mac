@@ -26,7 +26,7 @@ jobs:
       - name: Python 서버 빌드 (PyInstaller)
         run: |
           cd server
-          pyinstaller app.spec
+          pyinstaller app-mac.spec
 
       - name: whisper-cli 빌드 (whisper.cpp)
         run: |
@@ -37,6 +37,12 @@ jobs:
           mkdir -p ../server/dist/app/whisper-bin
           cp build/bin/whisper-cli ../server/dist/app/whisper-bin/whisper-cli
           chmod +x ../server/dist/app/whisper-bin/whisper-cli
+
+      - name: ffmpeg 번들
+        run: |
+          brew install ffmpeg
+          cp "$(which ffmpeg)" server/dist/app/ffmpeg
+          chmod +x server/dist/app/ffmpeg
 
       - name: resources/server 준비
         run: |
