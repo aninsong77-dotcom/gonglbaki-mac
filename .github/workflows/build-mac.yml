@@ -43,7 +43,7 @@ jobs:
         run: |
           git clone https://github.com/ggerganov/whisper.cpp --depth 1
           cd whisper.cpp
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch == 'x64' && 'x86_64' || 'arm64' }}
           cmake --build build --config Release --target whisper-cli
           mkdir -p ../server/dist/app/whisper-bin
           cp build/bin/whisper-cli ../server/dist/app/whisper-bin/whisper-cli
