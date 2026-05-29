@@ -54,6 +54,9 @@ jobs:
       - name: Vite 프론트엔드 빌드
         run: npm run build
 
+      - name: 앱 아이콘 512x512 리사이즈
+        run: sips -z 512 512 src/assets/gongulbaki-logo.png
+
       - name: Electron DMG 빌드
         run: npx electron-builder --mac
         env:
