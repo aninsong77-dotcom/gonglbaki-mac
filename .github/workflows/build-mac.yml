@@ -1,0 +1,68 @@
+name: Mac 빌드
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Python 의존성 설치
+        run: |
+          pip install pyinstaller
+          pip install -r server/requirements-mac.txt
+
+      - name: Python 서버 빌드 (PyInstaller)
+        run: |
+          cd server
+          pyinstaller app.spec
+
+      - name: whisper-cli 빌드 (whisper.cpp)
+        run: |
+          git clone https://github.com/ggerganov/whisper.cpp --depth 1
+          cd whisper.cpp
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release --target whisper-cli
+          mkdir -p ../server/dist/app/whisper-bin
+          cp build/bin/whisper-cli ../server/dist/app/whisper-bin/whisper-cli
+          chmod +x ../server/dist/app/whisper-bin/whisper-cli
+
+      - name: resources/server 준비
+        run: |
+          mkdir -p resources/server
+          cp -r server/dist/app/* resources/server/
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: npm 의존성 설치
+        run: npm install
+
+      - name: Vite 프론트엔드 빌드
+        run: npm run build
+
+      - name: Electron DMG 빌드
+        run: npx electron-builder --mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: DMG 아티팩트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: gongulbaki-mac-dmg
+          path: release/*.dmg
+          retention-days: 30

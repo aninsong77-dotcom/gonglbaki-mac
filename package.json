@@ -60,7 +60,8 @@
     "mac": {
       "target": "dmg",
       "icon": "src/assets/gongulbaki-logo.png",
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "identity": null
     },
     "dmg": {
       "title": "곤글박이"
