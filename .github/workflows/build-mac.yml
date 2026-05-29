@@ -75,3 +75,23 @@ jobs:
           name: gongulbaki-mac-dmg
           path: release/*.dmg
           retention-days: 30
+
+      - name: GitHub Release 생성 및 DMG 업로드
+        run: |
+          gh release delete mac-latest --yes 2>/dev/null || true
+          gh release create mac-latest release/*.dmg \
+            --title "곤글박이 Mac 버전" \
+            --notes "## 곤글박이 Mac 버전
+
+          상담 축어록 변환 앱 곤글박이의 Mac 버전입니다.
+
+          ### 설치 방법
+          1. DMG 파일 다운로드
+          2. 열기 후 앱을 Applications 폴더로 드래그
+          3. **처음 실행 시 더블클릭 말고 우클릭 → 열기** 로 실행
+
+          ### 참고
+          - Apple Silicon(M1/M2/M3) Mac 전용입니다
+          - 음성 파일을 텍스트로 변환하는 기능은 처음 실행 시 모델을 다운로드합니다 (인터넷 연결 필요)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
