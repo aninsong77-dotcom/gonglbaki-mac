@@ -10,15 +10,7 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        include:
-          - arch: arm64
-            runner: macos-latest
-          - arch: x64
-            runner: macos-13
-
-    runs-on: ${{ matrix.runner }}
+    runs-on: macos-latest
 
     steps:
       - name: 코드 체크아웃
@@ -43,7 +35,7 @@ jobs:
         run: |
           git clone https://github.com/ggerganov/whisper.cpp --depth 1
           cd whisper.cpp
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch == 'x64' && 'x86_64' || 'arm64' }}
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release --target whisper-cli
           mkdir -p ../server/dist/app/whisper-bin
           cp build/bin/whisper-cli ../server/dist/app/whisper-bin/whisper-cli
@@ -75,54 +67,27 @@ jobs:
         run: sips -z 512 512 src/assets/gongulbaki-logo.png
 
       - name: Electron DMG 빌드
-        run: npx electron-builder --mac --${{ matrix.arch }}
+        run: npx electron-builder --mac --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: DMG 아티팩트 업로드
-        uses: actions/upload-artifact@v4
-        with:
-          name: dmg-${{ matrix.arch }}
-          path: release/*.dmg
-          retention-days: 30
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: arm64 DMG 다운로드
-        uses: actions/download-artifact@v4
-        with:
-          name: dmg-arm64
-          path: release/arm64
-
-      - name: x64 DMG 다운로드
-        uses: actions/download-artifact@v4
-        with:
-          name: dmg-x64
-          path: release/x64
-
-      - name: GitHub Release 생성 및 두 버전 업로드
+      - name: GitHub Release 생성
         run: |
           gh release delete mac-latest --yes 2>/dev/null || true
-          gh release create mac-latest release/arm64/*.dmg release/x64/*.dmg \
+          gh release create mac-latest release/*.dmg \
             --title "곤글박이 Mac 버전" \
             --notes "## 곤글박이 Mac 버전
 
           상담 축어록 변환 앱 곤글박이의 Mac 버전입니다.
 
-          ### 내 맥에 맞는 파일 선택
-          - **arm64** → M1 / M2 / M3 Mac (2021년 이후 구매)
-          - **x64** → 인텔 Mac (2020년 이전 구매)
-
           ### 설치 방법
-          1. 내 맥에 맞는 DMG 파일 다운로드
+          1. DMG 파일 다운로드
           2. 열기 후 앱을 Applications 폴더로 드래그
           3. **처음 실행 시 더블클릭 말고 우클릭 → 열기** 로 실행
 
           ### 참고
+          - Apple Silicon(M1/M2/M3/M4) Mac 전용입니다
           - 음성 변환 기능은 처음 실행 시 모델을 다운로드합니다 (인터넷 연결 필요)
           - 문제 발생 시 홈 폴더의 gongulbaki_debug.txt 파일을 개발자에게 보내주세요" \
             --repo ${{ github.repository }}
