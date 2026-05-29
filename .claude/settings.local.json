@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --check \"C:\\\\Users\\\\안인성\\\\Desktop\\\\gonglbaki-genogram\\\\files \\(1\\)\\\\app.js\" 2>&1)"
+    ]
+  }
+}

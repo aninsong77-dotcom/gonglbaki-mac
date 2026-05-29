@@ -1,0 +1,10 @@
+node_modules/
+dist/
+release/
+server/build/
+resources/server/
+*.exe
+*.dll
+*.bin
+.env
+*.log
