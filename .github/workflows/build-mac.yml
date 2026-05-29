@@ -9,8 +9,16 @@ permissions:
   contents: write
 
 jobs:
-  build-mac:
-    runs-on: macos-latest
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-latest
+          - arch: x64
+            runner: macos-13
+
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: 코드 체크아웃
@@ -67,7 +75,7 @@ jobs:
         run: sips -z 512 512 src/assets/gongulbaki-logo.png
 
       - name: Electron DMG 빌드
-        run: npx electron-builder --mac
+        run: npx electron-builder --mac --${{ matrix.arch }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
@@ -75,26 +83,48 @@ jobs:
       - name: DMG 아티팩트 업로드
         uses: actions/upload-artifact@v4
         with:
-          name: gongulbaki-mac-dmg
+          name: dmg-${{ matrix.arch }}
           path: release/*.dmg
           retention-days: 30
 
-      - name: GitHub Release 생성 및 DMG 업로드
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: arm64 DMG 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: dmg-arm64
+          path: release/arm64
+
+      - name: x64 DMG 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: dmg-x64
+          path: release/x64
+
+      - name: GitHub Release 생성 및 두 버전 업로드
         run: |
           gh release delete mac-latest --yes 2>/dev/null || true
-          gh release create mac-latest release/*.dmg \
+          gh release create mac-latest release/arm64/*.dmg release/x64/*.dmg \
             --title "곤글박이 Mac 버전" \
             --notes "## 곤글박이 Mac 버전
 
           상담 축어록 변환 앱 곤글박이의 Mac 버전입니다.
 
+          ### 내 맥에 맞는 파일 선택
+          - **arm64** → M1 / M2 / M3 Mac (2021년 이후 구매)
+          - **x64** → 인텔 Mac (2020년 이전 구매)
+
           ### 설치 방법
-          1. DMG 파일 다운로드
+          1. 내 맥에 맞는 DMG 파일 다운로드
           2. 열기 후 앱을 Applications 폴더로 드래그
           3. **처음 실행 시 더블클릭 말고 우클릭 → 열기** 로 실행
 
           ### 참고
-          - Apple Silicon(M1/M2/M3) Mac 전용입니다
-          - 음성 파일을 텍스트로 변환하는 기능은 처음 실행 시 모델을 다운로드합니다 (인터넷 연결 필요)"
+          - 음성 변환 기능은 처음 실행 시 모델을 다운로드합니다 (인터넷 연결 필요)
+          - 문제 발생 시 홈 폴더의 gongulbaki_debug.txt 파일을 개발자에게 보내주세요" \
+            --repo ${{ github.repository }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
