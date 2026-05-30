@@ -55,7 +55,7 @@ jobs:
         run: sips -z 512 512 src/assets/gongulbaki-logo.png
 
       - name: Build DMG
-        run: npm run dist
+        run: npm run build && npx electron-builder --publish never
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4
