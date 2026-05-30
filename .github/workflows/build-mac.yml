@@ -51,6 +51,9 @@ jobs:
       - name: Vite build
         run: npm run build
 
+      - name: Resize icon to 512x512 (macOS requirement)
+        run: sips -z 512 512 src/assets/gongulbaki-logo.png
+
       - name: Build DMG
         run: npm run dist
 
