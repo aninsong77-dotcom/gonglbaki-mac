@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import {
   Play, Pause, Upload, Save, Settings,
-  Cpu, ShieldCheck, Clock, SkipBack, SkipForward, Undo2, BookOpen, Pencil,
+  Cpu, ShieldCheck, Clock, SkipBack, SkipForward, Undo2, BookOpen, Pencil, HelpCircle,
 } from "lucide-react";
 import gongulbakiLogo from "@/assets/gongulbaki-logo.png";
 import { Document, Packer, Paragraph, TextRun } from "docx";
@@ -304,6 +304,258 @@ function ModelManager({
 }
 // ─────────────────────────────────────────────────────────────────
 
+// 투어 본문 렌더링 — 글머리(•, 이모지 등) 있는 줄은 flex hanging indent 처리
+function renderTourBody(text: string) {
+  // [?] 토큰을 실제 HelpCircle 아이콘으로 치환
+  function renderInline(line: string): React.ReactNode {
+    if (!line.includes("[?]")) return line;
+    const parts = line.split("[?]");
+    return (
+      <>
+        {parts.reduce<React.ReactNode[]>((acc, part, i) => {
+          if (i > 0) acc.push(<HelpCircle key={i} className="inline w-3.5 h-3.5 mx-0.5 align-text-bottom" />);
+          acc.push(part);
+          return acc;
+        }, [])}
+      </>
+    );
+  }
+
+  return (
+    <div style={{ textWrap: "pretty" } as React.CSSProperties}>
+      {text.split("\n").map((line, i) => {
+        if (!line) return <div key={i} style={{ height: "0.4em" }} />;
+        // 글머리(•·) 또는 이모지/특수기호로 시작하는 줄만 hanging indent
+        // 한글(가-힣), 한자(一-鿿), 일본어(぀-ヿ) 제외
+        const m = line.match(/^([•·]|(?![가-힣一-鿿぀-ヿ])[^\x00-\x7F]\S*)\s/);
+        if (m) {
+          const sym = m[1];
+          const rest = line.slice(m[0].length);
+          return (
+            <div key={i} style={{ display: "flex", gap: "0.4em", alignItems: "flex-start" }}>
+              <span style={{ flexShrink: 0, lineHeight: 1.6 }}>{sym}</span>
+              <span style={{ flex: 1, minWidth: 0, lineHeight: 1.6 }}>{renderInline(rest)}</span>
+            </div>
+          );
+        }
+        return <div key={i} style={{ lineHeight: 1.6 }}>{renderInline(line)}</div>;
+      })}
+    </div>
+  );
+}
+
+// "곤글박이" 텍스트만 함초롬바탕체로 렌더링
+function renderGb(text: string) {
+  if (!text.includes("곤글박이")) return <>{text}</>;
+  const parts = text.split("곤글박이");
+  return (
+    <>
+      {parts.map((part, i) => (
+        <span key={i}>
+          {part}
+          {i < parts.length - 1 && (
+            <span style={{ fontFamily: "'HCR Batang','함초롬바탕',serif", fontWeight: "bold" }}>곤글박이</span>
+          )}
+        </span>
+      ))}
+    </>
+  );
+}
+
+// ── 상황별 힌트 (Context Hint) ────────────────────────────────────
+type ContextHintData = {
+  target: string;
+  title: string;
+  body: string;
+  position?: "top" | "bottom";
+};
+
+function ContextHint({ hint, onClose }: { hint: ContextHintData; onClose: () => void }) {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const TW = 260;
+
+  useEffect(() => {
+    const el = document.querySelector<HTMLElement>(`[data-tour="${hint.target}"]`);
+    if (el) setRect(el.getBoundingClientRect());
+  }, [hint.target]);
+
+  useEffect(() => {
+    const t = setTimeout(onClose, 10000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  const getStyle = (): React.CSSProperties => {
+    if (!rect) return { position: "fixed", bottom: 90, right: 16, zIndex: 8000, width: TW };
+    const cx = rect.left + rect.width / 2;
+    const pos = hint.position || "bottom";
+    let top: number, left = cx - TW / 2;
+    top = pos === "bottom" ? rect.bottom + 14 : rect.top - 140;
+    left = Math.max(8, Math.min(left, window.innerWidth - TW - 8));
+    top  = Math.max(8, top);
+    return { position: "fixed", top, left, zIndex: 8000, width: TW };
+  };
+
+  return (
+    <div
+      className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
+      style={getStyle()}
+    >
+      <div className="px-3.5 py-3">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <p className="font-medium text-gray-700 text-sm">{renderGb(hint.title)}</p>
+          <button onClick={onClose}
+            className="text-gray-300 hover:text-gray-500 shrink-0 text-xs leading-none mt-0.5">✕</button>
+        </div>
+        <div className="text-xs text-gray-500">{renderTourBody(hint.body)}</div>
+      </div>
+      <div className="h-px bg-gray-100 w-full">
+        <div className="h-full bg-gray-300" style={{ animation: "hint-shrink 10s linear forwards" }} />
+      </div>
+      <style>{`@keyframes hint-shrink { from { width: 100% } to { width: 0% } }`}</style>
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────
+
+// ── 온보딩 투어 ────────────────────────────────────────────────────
+type TourStepDef = {
+  target: string | null;
+  title: string;
+  body: string;
+  position?: "top" | "bottom" | "left" | "right";
+  width?: number;
+};
+
+const GENOGRAM_TOUR_STEPS: TourStepDef[] = [
+  { target: null,              title: "가계도 편집기 🌳",          body: "가족 구조와 구성원 간의 관계를\n시각적으로 그릴 수 있어요.\n주요 기능을 안내해 드릴게요." },
+  { target: "geo-nodes",       title: "인물 추가 □ ○ ◇",          body: "버튼을 클릭하면 캔버스에 도형이 추가돼요.\n• 더블클릭: 이름 입력\n• 나이 자리 클릭: 나이 입력\n• 사망/내담자 토글로 상태 표시",                     position: "bottom" },
+  { target: "geo-child-types", title: "자녀 유형",                  body: "유산·사산·임신 등 특수 자녀 도형이에요.\n• 임신: 빈 삼각형\n• 자연유산: 삼각형 + X\n• 인공유산: 삼각형 + X + 아랫선\n• 사산아: 작은 사각형 + X\n부모 관계선에 자녀로 연결해 사용해요.",             position: "bottom" },
+  { target: "geo-lines",       title: "관계선 연결",                body: "선 종류를 먼저 선택하세요.\n인물을 우클릭 → 연결 모드 시작\n연결할 인물을 클릭하면 선이 그어집니다.\nEsc로 취소",                                         position: "bottom" },
+  { target: "geo-child-line",  title: "자녀선 종류",                body: "자녀 연결선 종류를 선택해요.\n• 일반: 실선\n• 위탁: 점선\n• 입양: 이중선",                                                                              position: "bottom" },
+  { target: "geo-twins",       title: "쌍둥이",                     body: "Shift+클릭으로 자녀 2명 이상 선택 후\n쌍둥이 버튼을 클릭하면 선이 그어져요.\n• 쌍둥이: 이란성 (V자 선)\n• 일란성: V자 + 두 자녀 사이 가로선",             position: "bottom" },
+  { target: "geo-substance",   title: "약물 · 정신 · 신체 표시",    body: "인물을 선택한 뒤 버튼을 클릭하면 도형 안에 표시가 채워져요.\n• 약물남용: 아래 절반 검정\n• 정신신체문제: 왼쪽 절반 검정\n• 약물+정신/신체: 3/4 검정\n• 의심: 아래 절반 회색\n• 회복: 우하단 검정 + 좌하단 회색\n다시 클릭하면 표시가 해제돼요.",          position: "bottom", width: 340 },
+  { target: "geo-textbox",     title: "텍스트 상자 T",              body: "캔버스 어디든 메모나 설명을 자유롭게 추가할 수 있어요.\n① T 버튼 클릭 → 커서 모양 변경\n② 원하는 위치 클릭 → 텍스트 상자 생성\n더블클릭으로 내용 수정, 드래그로 이동,\n모서리 드래그로 크기 조절이 가능해요.\n색상(검정·빨강·파랑)과 글자 크기도 조절 가능해요.", position: "bottom", width: 340 },
+  { target: "geo-side-panel",  title: "감정선 · 학대 · 갈등",       body: "오른쪽 패널에 추가 선 종류가 있어요.\n• 감정 관계선: 무관심\n• 학대·갈등: 정서적학대, 방임, 통제\n패널 닫기(›) / 열기(‹) 가능",                        position: "left" },
+  { target: "geo-actions",     title: "자녀 추가 · 뒤로",           body: "자녀 추가: 결혼/동거선 선택 후 클릭 →\n연결할 자녀 노드 클릭\n↩ 뒤로: 최대 30단계 실행 취소 (Ctrl+Z)",                                              position: "bottom" },
+  { target: "geo-save",        title: "저장 · 불러오기 · 삭제",     body: "💾 저장: SVG(이미지) / JSON(이후 수정 가능)\n📂 열기: 저장된 JSON 파일 불러오기\n🗑️ 삭제(삭/제): 선택한 인물·선 삭제 (Delete 키도 가능)", position: "bottom", width: 340 },
+  { target: "geo-canvas",      title: "캔버스 조작",                body: "• 드래그: 인물 이동\n• Shift+클릭: 다중 선택\n• 휠 스크롤: 줌 인/아웃\n• Alt+드래그: 화면 이동\n• Delete: 선택 항목 삭제",                              position: "top"    },
+  { target: "help-btn",        title: "문제가 생겼을 때 🔧",        body: "이 버튼을 클릭하면 자주 발생하는 문제와\n해결 방법 안내 페이지가 열려요.\n\n📋 버튼: 디버그 로그 복사 후 문의 시 전송",                              position: "bottom" },
+  { target: null,              title: "가계도 준비 완료! ✅",       body: "이제 직접 그려보세요!\n[?] 버튼으로 언제든 다시 볼 수 있어요." },
+];
+
+const TOUR_STEPS: TourStepDef[] = [
+  { target: null,               title: "곤글박이에 오신 걸 환영합니다! 🪶",  body: "상담 녹음 파일을 자동으로 텍스트로 변환하고\n축어록을 쉽게 작성할 수 있어요.\n주요 기능을 빠르게 안내해 드릴게요.", width: 360 },
+  { target: "tabs",             title: "두 가지 탭",                           body: "축어록 작성과 가계도 편집,\n두 기능을 탭으로 전환할 수 있어요.",                                                             position: "bottom" },
+  { target: "btn-open-file",    title: "파일 열기 📂",                        body: "음성 파일(mp3, wav, m4a 등)을 불러오세요.\n자동으로 텍스트 변환이 시작돼요.\n변환 중 절전이 되어도 재실행 시 이어받기가 가능합니다.",    position: "bottom" },
+  { target: "btn-open-session", title: "세션 열기",                            body: "JSON으로 저장한 세션 파일을 불러와\n화자 분리 상태 그대로 이어서 편집해요.\n편집 중 파일 열기 → 재생만으로 음성을 따로 불러올 수 있어요.", position: "bottom" },
+  { target: "btn-save",         title: "문서 저장 💾",                         body: "📄 Word (.docx): 축어록 양식으로 자동 변환\n📋 JSON: 세션 열기로 다시 불러와 수정 가능\n\n⚠️ 종료 시 저장하지 않은 내용은 사라집니다.",    position: "bottom", width: 380 },
+  { target: "btn-split",        title: "화자 분리 ✏️",                         body: "변환 완료 후 이 버튼으로 편집 모드로 전환해요.\n• Enter: 줄 분할 + 화자 자동 전환\n• 화자 칩 클릭: 상담사 ↔ 내담자 ↔ 제3자\n• 되돌리기: 최대 30단계 실행 취소",   position: "bottom" },
+  { target: "player",           title: "오디오 플레이어 ▶️",                   body: "음성을 들으면서 변환 텍스트를 수정해요.\n• Shift+Space / Esc: 재생/정지\n• Shift+←/→: 3초 이동\n• 진행 바 클릭: 원하는 위치로 이동",               position: "top"    },
+  { target: "settings-btn",     title: "설정 ⚙️",                              body: "변환 엔진·모델 선택, 사용자 이름,\n시간 표시 여부를 설정할 수 있어요.",                                                              position: "bottom" },
+  { target: "help-btn",         title: "문제가 생겼을 때 🔧",                   body: "이 버튼을 클릭하면 자주 발생하는 문제와\n해결 방법을 안내하는 페이지가 열려요.\n\n📋 버튼으로 디버그 로그를 복사해\n문의 시 함께 보내주시면 도움이 됩니다.",          position: "bottom" },
+  { target: null,               title: "모든 준비 완료! ✅",                    body: "이제 곤글박이를 직접 사용해 보세요!\n\n헤더의 [?] 버튼을 누르면 언제든\n이 투어를 다시 볼 수 있어요." },
+];
+
+function TourOverlay({
+  step, stepIndex, total, onNext, onPrev, onClose,
+}: {
+  step: TourStepDef; stepIndex: number; total: number;
+  onNext: () => void; onPrev: () => void; onClose: () => void;
+}) {
+  const [spotlight, setSpotlight] = useState<DOMRect | null>(null);
+
+  useEffect(() => {
+    if (!step.target) { setSpotlight(null); return; }
+    const el = document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`);
+    if (!el) { setSpotlight(null); return; }
+    setSpotlight(el.getBoundingClientRect());
+  }, [step]);
+
+  const TW = step.width ?? 300;
+  const PAD = 10;
+  const SP = 6;
+
+  const tooltipStyle = (): React.CSSProperties => {
+    if (!spotlight) {
+      return { position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 9002, width: TW };
+    }
+    const pos = step.position || "bottom";
+    const cx = spotlight.left + spotlight.width / 2;
+    let top: number, left: number;
+    if (pos === "bottom") {
+      top = spotlight.bottom + SP + PAD;
+      left = cx - TW / 2;
+    } else if (pos === "top") {
+      top = spotlight.top - SP - PAD - 200;
+      left = cx - TW / 2;
+    } else if (pos === "right") {
+      top = spotlight.top;
+      left = spotlight.right + SP + PAD;
+    } else {
+      top = spotlight.top;
+      left = spotlight.left - TW - SP - PAD;
+    }
+    left = Math.max(8, Math.min(left, window.innerWidth - TW - 8));
+    top  = Math.max(8, top);
+    return { position: "fixed", top, left, zIndex: 9002, width: TW };
+  };
+
+  return (
+    <>
+      {/* 스포트라이트가 없을 때 가벼운 오버레이 */}
+      {!spotlight && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 9000, pointerEvents: "none" }} />
+      )}
+
+      {/* 스포트라이트: box-shadow로 외부 살짝 어둡게 + 초록 테두리 */}
+      {spotlight && (
+        <div style={{
+          position: "fixed",
+          top: spotlight.top - SP,
+          left: spotlight.left - SP,
+          width: spotlight.width + SP * 2,
+          height: spotlight.height + SP * 2,
+          borderRadius: 10,
+          boxShadow: "0 0 0 9999px rgba(0,0,0,0.35), 0 0 0 2px #d1d5db",
+          background: "transparent",
+          zIndex: 9001,
+          pointerEvents: "none",
+        }} />
+      )}
+
+      {/* 툴팁 카드 */}
+      <div style={tooltipStyle()} className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+        <div className="px-4 py-3.5">
+          <p className="font-medium text-gray-700 text-sm mb-1">{renderGb(step.title)}</p>
+          <div className="text-sm text-gray-500">{renderTourBody(step.body)}</div>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+            <button onClick={onClose} className="text-[11px] text-gray-400 hover:text-gray-600">건너뛰기</button>
+            <div className="flex items-center gap-1.5">
+              {stepIndex > 0 && (
+                <button onClick={onPrev}
+                  className="text-xs px-3 py-1.5 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-600">
+                  이전
+                </button>
+              )}
+              <button onClick={onNext}
+                className="text-xs px-3 py-1.5 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium">
+                {stepIndex === total - 1 ? "완료" : "다음 →"}
+              </button>
+            </div>
+          </div>
+          <div className="flex justify-center gap-1.5 mt-2.5">
+            {Array.from({ length: total }).map((_, i) => (
+              <div key={i} className="rounded-full transition-all duration-200"
+                style={{ width: i === stepIndex ? 12 : 5, height: 5, background: i === stepIndex ? "#6b7280" : "#e5e7eb" }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+// ─────────────────────────────────────────────────────────────────
+
 export default function Index() {
   const [userName, setUserName] = useState(() => localStorage.getItem("gb_user") || "");
   const [tempName, setTempName] = useState(userName);
@@ -326,10 +578,44 @@ export default function Index() {
   const [openSettings, setOpenSettings] = useState(!localStorage.getItem("gb_user"));
   const [openManual, setOpenManual] = useState(false);
   const [manualTab, setManualTab] = useState<"transcribe" | "genogram">("transcribe");
+  const [tourStep, setTourStep] = useState(-1);
+  const [geoTourStep, setGeoTourStep] = useState(-1);
+  const [contextHint, setContextHint] = useState<ContextHintData | null>(null);
 
   useEffect(() => { localStorage.setItem("gb_user", userName); }, [userName]);
   useEffect(() => { localStorage.setItem("gb_model", model); }, [model]);
   useEffect(() => { localStorage.setItem("gb_engine", engine); }, [engine]);
+
+  const tourAutoStarted = useRef(false);
+
+  // 재방문 사용자 (이름 있고 투어 안 본 경우) — 앱 시작 시 자동
+  useEffect(() => {
+    if (!localStorage.getItem("gb_tour_done") && localStorage.getItem("gb_user")) {
+      tourAutoStarted.current = true;
+      const t = setTimeout(() => setTourStep(0), 800);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  // 최초 설치 (이름 처음 저장 시) — 설정창 닫힌 뒤 자동
+  const prevUserNameRef = useRef(userName);
+  useEffect(() => {
+    if (userName && !prevUserNameRef.current && !localStorage.getItem("gb_tour_done") && !tourAutoStarted.current) {
+      tourAutoStarted.current = true;
+      const t = setTimeout(() => setTourStep(0), 600);
+      return () => clearTimeout(t);
+    }
+    prevUserNameRef.current = userName;
+  }, [userName]);
+
+  const geoTourAutoStarted = useRef(false);
+  useEffect(() => {
+    if (activeTab === "genogram" && !localStorage.getItem("gb_geo_tour_done") && !geoTourAutoStarted.current) {
+      geoTourAutoStarted.current = true;
+      const t = setTimeout(() => setGeoTourStep(0), 600);
+      return () => clearTimeout(t);
+    }
+  }, [activeTab]);
 
   const [mode, setMode] = useState<"raw" | "split">("raw");
   const [rawText, setRawText] = useState("");
@@ -346,9 +632,59 @@ export default function Index() {
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const [converting, setConverting] = useState(false);
+
+  // ── 상황별 힌트 트리거 ──────────────────────────────────────────
+  const prevConvertingRef = useRef(false);
+  useEffect(() => {
+    if (prevConvertingRef.current && !converting && rawText.trim()) {
+      if (!localStorage.getItem("gb_hint_split")) {
+        const t = setTimeout(() => {
+          setContextHint({ target: "btn-split", title: "변환 완료! ✅", body: "화자 분리 시작 버튼을 눌러\n편집 모드로 전환하세요.", position: "bottom" });
+          localStorage.setItem("gb_hint_split", "1");
+        }, 400);
+        return () => clearTimeout(t);
+      }
+    }
+    prevConvertingRef.current = converting;
+  }, [converting, rawText]);
+
+  const splitHintShownRef = useRef(false);
+  useEffect(() => {
+    if (mode === "split" && !splitHintShownRef.current && !localStorage.getItem("gb_hint_editing")) {
+      splitHintShownRef.current = true;
+      const t = setTimeout(() => {
+        setContextHint({
+          target: "btn-undo",
+          title: "화자 분리 편집 모드 ✏️",
+          body: "• Enter: 커서 위치에서 줄 분할\n• 화자 칩 클릭: 상담사↔내담자↔제3자\n• Backspace(줄 맨 앞): 이전 줄과 합치기\n• 되돌리기 버튼: 최대 30단계 실행 취소",
+          position: "bottom",
+        });
+        localStorage.setItem("gb_hint_editing", "1");
+      }, 400);
+      return () => clearTimeout(t);
+    }
+  }, [mode]);
+
   const [convertStatus, setConvertStatus] = useState("");
   const [convertProgress, setConvertProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const errorHintShownRef = useRef(false);
+  useEffect(() => {
+    if (errorMsg && !errorHintShownRef.current && !localStorage.getItem("gb_hint_error")) {
+      errorHintShownRef.current = true;
+      const t = setTimeout(() => {
+        setContextHint({
+          target: "debug-btn",
+          title: "문제가 생겼나요? 📋",
+          body: "상단 📋 버튼을 클릭하면 디버그 로그가\n클립보드에 복사돼요.\n문의 시 붙여넣기해서 보내주시면\n원인 파악에 도움이 됩니다.\n🔧 버튼으로 문제 해결 안내도 확인하세요.",
+          position: "bottom",
+        });
+        localStorage.setItem("gb_hint_error", "1");
+      }, 1000);
+      return () => clearTimeout(t);
+    }
+  }, [errorMsg]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const cancelConvert = () => {
@@ -899,6 +1235,17 @@ export default function Index() {
         setMode(data.mode || "raw");
         setShowTime(data.showTime || false);
         setLinesHistory([]);
+        if (!localStorage.getItem("gb_hint_session_audio")) {
+          setTimeout(() => {
+            setContextHint({
+              target: "btn-open-file",
+              title: "음성 파일 불러오기 🎵",
+              body: "파일 열기 → 재생만을 선택하면\n음성 파일을 불러와 들으면서\n텍스트를 편집할 수 있어요.",
+              position: "bottom",
+            });
+            localStorage.setItem("gb_hint_session_audio", "1");
+          }, 600);
+        }
       } catch { alert("세션 파일을 읽을 수 없습니다."); }
     };
     reader.readAsText(f, "utf-8");
@@ -984,7 +1331,7 @@ export default function Index() {
             }
           </div>
           {/* 탭 버튼 */}
-          <div className="flex items-center gap-1 ml-4 bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center gap-1 ml-4 bg-gray-100 rounded-lg p-1" data-tour="tabs">
             <button onClick={() => setActiveTab("transcribe")}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors
                 ${activeTab === "transcribe" ? "bg-white text-[#2d1f0e] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
@@ -1000,7 +1347,7 @@ export default function Index() {
         <div className="flex items-center gap-1.5" style={{ WebkitAppRegion: "no-drag" } as any}>
           <Dialog open={openSettings} onOpenChange={setOpenSettings}>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="w-8 h-8 ml-1">
+              <Button variant="ghost" size="icon" className="w-8 h-8 ml-1" data-tour="settings-btn">
                 <Settings className="w-4 h-4" />
               </Button>
             </DialogTrigger>
@@ -1324,21 +1671,6 @@ export default function Index() {
                 <BookOpen className="w-4 h-4" />
               </Button>
             </DialogTrigger>
-
-          {/* 디버그 파일 복사 버튼 */}
-          <Button variant="ghost" size="icon" className="w-8 h-8" title="디버그 파일 복사"
-            onClick={async () => {
-              try {
-                const res = await fetch("http://127.0.0.1:5577/api/debug-log");
-                const data = await res.json();
-                await navigator.clipboard.writeText(data.content);
-                alert("디버그 파일이 클립보드에 복사됐어요!\n문의 시 붙여넣기(Ctrl+V)해서 보내주세요.");
-              } catch {
-                alert("복사에 실패했어요. %USERPROFILE%\\gongulbaki_debug.txt 파일을 직접 열어주세요.");
-              }
-            }}>
-            📋
-          </Button>
             <DialogContent className="sm:max-w-lg flex flex-col" style={{ maxHeight: "85vh" }}>
               <DialogHeader className="shrink-0">
                 <DialogTitle className="flex items-center gap-2">
@@ -1560,6 +1892,28 @@ export default function Index() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Button variant="outline" size="sm" className="h-7 text-xs gap-1 px-2" data-tour="help-btn"
+            onClick={() => window.open("http://127.0.0.1:5577/help.html", "_blank")}>
+            🔧 문제해결
+          </Button>
+          <Button variant="ghost" size="icon" className="w-8 h-8" title="사용 안내 투어"
+            onClick={() => activeTab === "genogram" ? setGeoTourStep(0) : setTourStep(0)}>
+            <HelpCircle className="w-4 h-4" />
+          </Button>
+          {/* 디버그 파일 복사 버튼 */}
+          <Button variant="ghost" size="icon" className="w-8 h-8" title="디버그 로그 복사" data-tour="debug-btn"
+            onClick={async () => {
+              try {
+                const res = await fetch("http://127.0.0.1:5577/api/debug-log");
+                const data = await res.json();
+                await navigator.clipboard.writeText(data.content);
+                alert("디버그 파일이 클립보드에 복사됐어요!\n문의 시 붙여넣기(Ctrl+V)해서 보내주세요.");
+              } catch {
+                alert("복사에 실패했어요. ~/gongulbaki_debug.txt 파일을 직접 열어주세요.");
+              }
+            }}>
+            📋
+          </Button>
         </div>
       </header>
 
@@ -1689,7 +2043,7 @@ export default function Index() {
 
           {/* 파일/세션 버튼 + 모드 버튼 — 항상 오른쪽 정렬 */}
           <div className="ml-auto flex items-center gap-1.5">
-            <label>
+            <label data-tour="btn-open-file">
               <input type="file" accept="audio/*" className="hidden"
                 onChange={e => e.target.files?.[0] && onFileSelect(e.target.files[0])} />
               <Button variant="outline" size="sm" asChild>
@@ -1700,7 +2054,7 @@ export default function Index() {
               <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 3v10M3 8h10"/></svg>
               새 작업
             </Button>
-            <label title="세션 불러오기 (.json)">
+            <label title="세션 불러오기 (.json)" data-tour="btn-open-session">
               <input type="file" accept=".json" className="hidden"
                 onChange={e => e.target.files?.[0] && loadSession(e.target.files[0])} />
               <Button variant="outline" size="sm" asChild>
@@ -1710,7 +2064,7 @@ export default function Index() {
                 </span>
               </Button>
             </label>
-            <Button size="sm" onClick={exportDocx}
+            <Button size="sm" onClick={exportDocx} data-tour="btn-save"
               className="gap-1 bg-[#3a6a4a] hover:bg-[#2d5a3a] text-white border-0">
               <Save className="w-3.5 h-3.5" /> 문서 저장
             </Button>
@@ -1719,7 +2073,7 @@ export default function Index() {
 
             {/* raw 모드: 화자분리 시작 */}
             {mode === "raw" && (
-              <Button size="sm" onClick={startSplitting} disabled={!rawText.trim()}
+              <Button size="sm" onClick={startSplitting} disabled={!rawText.trim()} data-tour="btn-split"
                 className="gap-1 bg-[#3a6a4a] hover:bg-[#2d5a3a] text-white border-0">
                 화자 분리 시작 →
               </Button>
@@ -1732,7 +2086,7 @@ export default function Index() {
                   ← 줄글로
                 </Button>
                 <Button size="sm" variant="outline" onClick={undoLines}
-                  disabled={linesHistory.length === 0}
+                  disabled={linesHistory.length === 0} data-tour="btn-undo"
                   className="text-xs gap-1" title="실행 취소 (Undo)">
                   <Undo2 className="w-3.5 h-3.5" /> 되돌리기
                 </Button>
@@ -1858,7 +2212,7 @@ export default function Index() {
 
       {/* ── 하단 플레이어 (축어록 탭에서만) ── */}
       {activeTab === "transcribe" && (
-      <div className="bg-white border-t border-gray-200 shrink-0">
+      <div className="bg-white border-t border-gray-200 shrink-0" data-tour="player">
         {/* 변환 진행 바 - 플레이어 바로 위 */}
         {converting && (
           <div className="flex items-center gap-3 px-5 py-1.5 bg-[#f7f5f0] border-b border-gray-100">
@@ -1936,6 +2290,49 @@ export default function Index() {
           <span className="text-xs font-mono text-gray-500 shrink-0">{fmt(duration)}</span>
         </div>
       </div>
+      )}
+
+      {/* ── 상황별 힌트 ── */}
+      {contextHint && tourStep < 0 && (
+        <ContextHint hint={contextHint} onClose={() => setContextHint(null)} />
+      )}
+
+      {/* ── 축어록 투어 ── */}
+      {tourStep >= 0 && tourStep < TOUR_STEPS.length && (
+        <TourOverlay
+          step={TOUR_STEPS[tourStep]}
+          stepIndex={tourStep}
+          total={TOUR_STEPS.length}
+          onNext={() => {
+            if (tourStep >= TOUR_STEPS.length - 1) {
+              localStorage.setItem("gb_tour_done", "1");
+              setTourStep(-1);
+            } else {
+              setTourStep(s => s + 1);
+            }
+          }}
+          onPrev={() => setTourStep(s => Math.max(0, s - 1))}
+          onClose={() => { localStorage.setItem("gb_tour_done", "1"); setTourStep(-1); }}
+        />
+      )}
+
+      {/* ── 가계도 투어 ── */}
+      {geoTourStep >= 0 && geoTourStep < GENOGRAM_TOUR_STEPS.length && (
+        <TourOverlay
+          step={GENOGRAM_TOUR_STEPS[geoTourStep]}
+          stepIndex={geoTourStep}
+          total={GENOGRAM_TOUR_STEPS.length}
+          onNext={() => {
+            if (geoTourStep >= GENOGRAM_TOUR_STEPS.length - 1) {
+              localStorage.setItem("gb_geo_tour_done", "1");
+              setGeoTourStep(-1);
+            } else {
+              setGeoTourStep(s => s + 1);
+            }
+          }}
+          onPrev={() => setGeoTourStep(s => Math.max(0, s - 1))}
+          onClose={() => { localStorage.setItem("gb_geo_tour_done", "1"); setGeoTourStep(-1); }}
+        />
       )}
 
       {/* ── 종료 확인 모달 ── */}

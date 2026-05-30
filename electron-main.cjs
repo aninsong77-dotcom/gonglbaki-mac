@@ -5,11 +5,6 @@ const http = require("http");
 const fs = require("fs");
 const os = require("os");
 
-let mainWindow;
-let splashWindow;
-let pyProcess;
-
-const PORT = 5577;
 const LOG_PATH = path.join(os.homedir(), "gongulbaki_debug.txt");
 
 function electronLog(msg) {
@@ -18,6 +13,12 @@ function electronLog(msg) {
   try { fs.appendFileSync(LOG_PATH, line, "utf8"); } catch {}
   console.log(msg);
 }
+
+let mainWindow;
+let splashWindow;
+let pyProcess;
+
+const PORT = 5577;
 
 function waitForServer(callback, retries = 30) {
   http.get(`http://127.0.0.1:${PORT}/api/health`, (res) => {
@@ -33,13 +34,12 @@ function startPython() {
   let pyBin, pyArgs;
 
   if (isPackaged) {
-    // 패키징된 경우 → 서버 실행파일 단독 실행
-    const exeName = process.platform === "darwin" ? "app" : "app.exe";
-    pyBin = path.join(process.resourcesPath, "server", exeName);
+    // 패키징된 경우 → macOS 서버 바이너리 실행
+    pyBin = path.join(process.resourcesPath, "server", "app");
     pyArgs = [];
   } else {
     // 개발 모드 → python으로 app.py 실행
-    pyBin = "python";
+    pyBin = "python3";
     pyArgs = [path.join(__dirname, "server", "app.py")];
   }
 
@@ -88,7 +88,7 @@ function createMainWindow() {
     show: false,
     opacity: 0,
     backgroundColor: "#f7f5f2",
-    icon: path.join(__dirname, "src", "assets", "gongulbaki-icon.ico"),
+    icon: path.join(__dirname, "src", "assets", "gongulbaki-logo.png"),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -139,7 +139,7 @@ function createMainWindow() {
         width: 860,
         height: 700,
         center: true,
-        icon: path.join(__dirname, "src", "assets", "gongulbaki-icon.ico"),
+        icon: path.join(__dirname, "src", "assets", "gongulbaki-logo.png"),
       },
     };
   });

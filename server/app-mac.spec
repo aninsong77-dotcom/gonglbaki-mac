@@ -1,21 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_all
-
-ct2_datas, ct2_binaries, ct2_hidden = collect_all('ctranslate2')
-fw_datas, fw_binaries, fw_hidden = collect_all('faster_whisper')
-tok_datas, tok_binaries, tok_hidden = collect_all('tokenizers')
-
 a = Analysis(
     ['app.py'],
     pathex=[],
-    binaries=ct2_binaries + fw_binaries + tok_binaries,
-    datas=ct2_datas + fw_datas + tok_datas,
-    hiddenimports=[
-        'psutil',
-        'huggingface_hub',
-        'tqdm',
-        'flask_cors',
-    ] + ct2_hidden + fw_hidden + tok_hidden,
+    binaries=[],
+    datas=[],
+    hiddenimports=['psutil'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

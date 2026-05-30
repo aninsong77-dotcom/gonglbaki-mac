@@ -268,10 +268,7 @@ def delete_model(name: str):
 # whisper.cpp 모델 관련
 # ════════════════════════════════════════════════════════════════
 
-if os.name == "nt":
-    CPP_MODELS_DIR = Path(r"C:\whisper-models")
-else:
-    CPP_MODELS_DIR = Path.home() / "whisper-models"
+CPP_MODELS_DIR = Path.home() / "whisper-models"
 
 CPP_MODEL_FILES = {
     "small":    "ggml-small.bin",
@@ -437,32 +434,19 @@ def download_models():
     )
 
 def get_whisper_cpp_exe() -> Path:
-    """whisper-cli 경로 반환 — OS별로 실행파일 이름 분기"""
-    exe_name = "whisper-cli.exe" if os.name == "nt" else "whisper-cli"
-    if os.name == "nt":
-        fixed = Path(r"C:\whisper-bin\whisper-cli.exe")
-        if fixed.exists():
-            return fixed
+    """whisper-cli 경로 반환"""
     if getattr(sys, 'frozen', False):
-        return Path(sys.executable).resolve().parent / "whisper-bin" / exe_name
+        return Path(sys.executable).resolve().parent / "whisper-bin" / "whisper-cli"
     else:
-        return Path(__file__).resolve().parent / "whisper-bin" / exe_name
-
-def get_ffmpeg_path() -> str:
-    """번들된 ffmpeg 경로를 우선 반환, 없으면 PATH에서 찾기"""
-    if getattr(sys, 'frozen', False):
-        bundled = Path(sys.executable).resolve().parent / "ffmpeg"
-        if bundled.exists():
-            return str(bundled)
-    return "ffmpeg"
+        return Path(__file__).resolve().parent / "whisper-bin" / "whisper-cli"
 
 def convert_to_wav_eng(src_path: str) -> str:
-    """ffmpeg으로 16kHz Mono WAV 변환. 영문 경로 임시 디렉토리에 저장."""
+    """
+    ffmpeg으로 16kHz Mono WAV 변환.
+    임시파일을 홈 디렉터리 아래 temp 폴더에 저장.
+    """
     import subprocess, uuid
-    if os.name == "nt":
-        tmp_dir = Path(r"C:\whisper-models")
-    else:
-        tmp_dir = Path(tempfile.gettempdir()) / "gongulbaki"
+    tmp_dir = Path.home() / ".gongulbaki" / "tmp"
     try:
         tmp_dir.mkdir(parents=True, exist_ok=True)
     except Exception as e:
@@ -476,7 +460,7 @@ def convert_to_wav_eng(src_path: str) -> str:
         startupinfo.wShowWindow = subprocess.SW_HIDE
     try:
         subprocess.run(
-            [get_ffmpeg_path(), "-y", "-i", src_path,
+            ["ffmpeg", "-y", "-i", src_path,
              "-ar", "16000", "-ac", "1", "-f", "wav", wav_path],
             capture_output=True, check=True, startupinfo=startupinfo
         )

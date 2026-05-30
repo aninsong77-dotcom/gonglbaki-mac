@@ -1105,7 +1105,7 @@ export default function Genogram() {
         {/* ── 1행: 인물 | 선종류 | 쌍둥이 ── */}
         <div className="flex items-center gap-1 py-1 border-b border-gray-100" style={{ flexShrink: 0, minWidth: "max-content" }}>
         {/* 인물 */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0" data-tour="geo-nodes">
           <TwoLineBtn top="□" bottom="남성" onClick={() => addNode("남성")} />
           <TwoLineBtn top="○" bottom="여성" onClick={() => addNode("여성")} />
           <TwoLineBtn top="◇" bottom="논바이너리" onClick={() => addNode("논바이너리")} />
@@ -1137,6 +1137,7 @@ export default function Genogram() {
           <div className="h-6 w-px bg-gray-200" />
 
         {/* 선 카테고리 */}
+        <div data-tour="geo-lines" className="flex items-center gap-1 shrink-0 flex-wrap">
         {lineCategories.map(cat => (
           <div key={cat.label} className="flex items-center gap-1 shrink-0">
             <span className="text-[8px] text-gray-400 font-bold mr-0.5 shrink-0 leading-tight text-center whitespace-pre-line">{cat.label}</span>
@@ -1146,6 +1147,7 @@ export default function Genogram() {
             <div className="h-6 w-px bg-gray-200 mx-0.5" />
           </div>
         ))}
+        </div>{/* geo-lines 닫기 */}
 
           <div className="h-6 w-px bg-gray-200" />
         </div>
@@ -1154,7 +1156,7 @@ export default function Genogram() {
         <div className="flex items-center gap-1 py-1" style={{ flexShrink: 0, minWidth: "max-content" }}>
 
           {/* 자녀 연결선 종류 */}
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0" data-tour="geo-child-line">
                     <span className="text-[8px] text-gray-400 font-bold leading-tight text-center">자녀</span>
                     {(["일반","위탁","입양"] as const).map(t => (
                       <button key={t} onClick={() => setChildLineType(t)}
@@ -1180,7 +1182,7 @@ export default function Genogram() {
                     const selectedChildIds = Array.from(selected).filter(id => nodes.some(n => n.id === id));
                     const twinDisabled = selectedChildIds.length < 2;
                     return (
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0" data-tour="geo-twins">
                     <span className="text-[8px] text-gray-400 font-bold leading-tight text-center">쌍<br/>둥<br/>이</span>
                     {([
                       { label: "쌍둥이", identical: false },
@@ -1249,7 +1251,7 @@ export default function Genogram() {
           <div className="h-6 w-px bg-gray-200" />
 
           {/* 특수 자녀 도형 */}
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0" data-tour="geo-child-types">
                     <span className="text-[8px] text-gray-400 font-bold leading-tight text-center">자녀<br/>유형</span>
                     {([
                       { g: "임신" as const, icon: <polygon points="10,3 17,16 3,16" fill="white" stroke="#374151" strokeWidth="1.5"/> },
@@ -1267,6 +1269,7 @@ export default function Genogram() {
 
           <div className="h-6 w-px bg-gray-200" />
 
+          <div className="flex items-center gap-1 shrink-0" data-tour="geo-substance">
           <span className="text-[8px] text-gray-400 font-bold shrink-0 leading-tight text-center">약물<br/>정신<br/>신체</span>
                   <div className="flex items-center gap-1 shrink-0">
                     {(["약물남용", "정신신체문제", "약물정신신체", "약물남용의심", "약물남용회복"] as SubstanceType[]).map(type => {
@@ -1298,13 +1301,14 @@ export default function Genogram() {
                       );
                     })}
                   </div>
+          </div>{/* geo-substance 닫기 */}
 
                   <div className="h-4 w-px bg-gray-200 mx-1" />
 
           <div className="h-6 w-px bg-gray-200" />
 
           {/* 텍스트 — 2행 약물 오른쪽 */}
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0" data-tour="geo-textbox">
                     <button onClick={() => { setTextBoxMode(v => !v); setSelected(new Set()); }}
                       className={`flex flex-col items-center justify-center px-1.5 py-1 rounded border text-[10px] font-medium transition-colors leading-tight min-w-[36px] gap-0.5
                         ${textBoxMode ? "bg-[#e8f4e8] border-[#3a6a4a] text-[#2d7a3a]" : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-[#f0f7f2] hover:border-[#3a6a4a]"}`}>
@@ -1330,7 +1334,7 @@ export default function Genogram() {
           <div className="h-6 w-px bg-gray-200" />
 
           {/* 기능 */}
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0" data-tour="geo-actions">
                     <TwoLineBtn top="자녀" bottom="추가"
                       onClick={() => {
                         const selLine = lines.find(l => selected.has(l.id) && marriages.some(m => m.id === l.id));
@@ -1347,7 +1351,7 @@ export default function Genogram() {
                     </button>
                   </div>
 
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-1.5" data-tour="geo-save">
           {!legendVisible && (
             <button onClick={() => setLegendVisible(true)}
               className="flex flex-col items-center justify-center px-1.5 py-1 rounded border text-[10px] font-medium transition-colors leading-tight min-w-[36px] gap-0.5 border-gray-300 bg-gray-100 text-gray-500 hover:bg-[#f0f7f2] hover:border-[#3a6a4a]">
@@ -1413,7 +1417,7 @@ export default function Genogram() {
 
       {/* ── 캔버스 + 사이드 패널 ── */}
       <div className="flex flex-1 overflow-hidden">
-      <div ref={wrapRef}
+      <div ref={wrapRef} data-tour="geo-canvas"
         className="flex-1 relative overflow-hidden"
         style={{ background: bw ? "#fff" : "#fafafa", backgroundImage: bw ? "none" : "radial-gradient(circle, #d1d5db 1px, transparent 1px)", backgroundSize: "24px 24px" }}
         onMouseDownCapture={(e) => {
@@ -1882,7 +1886,7 @@ export default function Genogram() {
       </div>
 
       {/* ── 우측 사이드 패널 ── */}
-      <div style={{
+      <div data-tour="geo-side-panel" style={{
         width: panelOpen ? 148 : 28, minWidth: panelOpen ? 148 : 28,
         background: '#fff', borderLeft: '1px solid #e5e7eb',
         display: 'flex', flexDirection: 'column',

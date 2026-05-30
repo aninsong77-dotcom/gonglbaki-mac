@@ -21,6 +21,7 @@
     padding-bottom: 1.25rem;
     border-bottom: 1px solid #e5e0d8;
     margin-bottom: 2rem;
+    justify-content: space-between;
   }
   .logo {
     width: 40px; height: 40px; background: #3a6a4a;
@@ -132,17 +133,33 @@
 
   .panel { display: none; }
   .panel.active { display: block; }
+
+  .copy-debug-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: white; color: #374151;
+    border: 1px solid #e5e0d8; border-radius: 8px;
+    padding: 6px 12px; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+    transition: background 0.12s;
+  }
+  .copy-debug-btn:hover { background: #f0f7f2; border-color: #3a6a4a; color: #3a6a4a; }
+  .copy-debug-btn:active { transform: scale(0.97); }
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <div class="header">
+    <div style="display:flex;align-items:center;gap:14px;">
     <img src="data:image/png;base64,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" alt="곤글박이 로고" style="width:auto;height:48px;object-fit:contain;flex-shrink:0;mix-blend-mode:multiply;" />
     <div>
       <div class="header-title">곤글박이 — 문제 해결 안내</div>
       <div class="header-sub">변환이 안 될 때 단계별로 확인해보세요</div>
     </div>
+    </div>
+    <button class="copy-debug-btn" onclick="copyDebugLog()">
+      📋 디버그 로그 복사
+    </button>
   </div>
 
   <div class="tab-bar">
@@ -358,6 +375,25 @@
 </div>
 
 <script>
+  async function copyDebugLog() {
+    try {
+      const res = await fetch('http://127.0.0.1:5577/api/debug-log');
+      const data = await res.json();
+      await navigator.clipboard.writeText(data.content);
+      showToast('디버그 로그가 복사됐어요! 문의 시 붙여넣기(Ctrl+V)해서 보내주세요.');
+    } catch {
+      showToast('복사 실패 — %USERPROFILE%\\gongulbaki_debug.txt 파일을 직접 보내주세요.');
+    }
+  }
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:white;padding:10px 18px;border-radius:8px;font-size:12px;z-index:999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.2)';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
   function toggle(header) {
     const body = header.nextElementSibling;
     const chev = header.querySelector('.chevron');

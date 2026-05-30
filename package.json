@@ -46,17 +46,6 @@
   "build": {
     "appId": "com.aninsong.gongulbaki",
     "productName": "곤글박이",
-    "win": {
-      "target": "nsis",
-      "icon": "src/assets/gongulbaki-icon.ico"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "곤글박이"
-    },
     "mac": {
       "target": "dmg",
       "icon": "src/assets/gongulbaki-logo.png",

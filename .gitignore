@@ -1,10 +1,13 @@
 node_modules/
 dist/
 release/
+resources/
+server/venv/
 server/build/
-resources/server/
+server/dist/
+server/__pycache__/
+*.log
+.DS_Store
+.claude/
 *.exe
 *.dll
-*.bin
-.env
-*.log
