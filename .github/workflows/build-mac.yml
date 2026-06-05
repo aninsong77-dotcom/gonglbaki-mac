@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: macos-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -63,3 +65,14 @@ jobs:
           name: gongulbaki-mac-dmg
           path: release/*.dmg
           retention-days: 7
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mac-electron38
+          name: 곤글박이 Mac (Electron 38 · macOS 26 지원)
+          body: |
+            macOS 26(Tahoe) 시작 크래시 수정 — Electron 38.8.6.
+            아래 .dmg를 받아 열고, 곤글박이를 응용 프로그램으로 끌어다 설치하세요.
+            (처음 열 때 "확인되지 않은 개발자" 뜨면: 앱 우클릭 → 열기 → 열기)
+          files: release/*.dmg
