@@ -46,6 +46,7 @@
   "build": {
     "appId": "com.aninsong.gongulbaki",
     "productName": "곤글박이",
+    "afterPack": "./scripts/after-pack-sign.cjs",
     "mac": {
       "target": "dmg",
       "icon": "src/assets/gongulbaki-logo.png",

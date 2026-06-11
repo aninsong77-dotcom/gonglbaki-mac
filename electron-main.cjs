@@ -5,11 +5,6 @@ const http = require("http");
 const fs = require("fs");
 const os = require("os");
 
-// macOS 26(Tahoe)에서 강화된 MAP_JIT 규칙 때문에 V8 JIT 워커(특히 네트워크/리졸버 스레드)가
-// 시작 직후 실행권한을 잃어 EXC_BREAKPOINT(brk 0)로 즉시 크래시함.
-// → V8 JIT를 끄고 인터프리터 전용 모드로 돌려 원천 회피. 곤글박이는 무거운 연산을
-//    Python/whisper가 담당하고 JS는 UI뿐이라 체감 성능 영향은 거의 없음.
-app.commandLine.appendSwitch("js-flags", "--jitless");
 
 const LOG_PATH = path.join(os.homedir(), "gongulbaki_debug.txt");
 
