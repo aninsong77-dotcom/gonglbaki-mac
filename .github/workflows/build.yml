@@ -17,9 +17,11 @@ jobs:
 
       - name: Python 서버 빌드 (Mac)
         run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install faster-whisper flask flask-cors numpy psutil pyinstaller
           cd server
-          pip install -r requirements-mac.txt
           pyinstaller app-mac.spec
+          chmod +x dist/app/app
           rsync -av --exclude='whisper-bin' dist/app/ ../resources/server/
 
       - uses: actions/setup-node@v4
@@ -30,6 +32,8 @@ jobs:
         run: npm install
 
       - name: Mac DMG 빌드
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npm run dist:mac
 
       - name: DMG 업로드
@@ -49,13 +53,12 @@ jobs:
 
       - name: Python 서버 빌드 (Windows)
         run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install faster-whisper flask flask-cors numpy psutil pyinstaller
           cd server
-          pip install -r requirements.txt
-          pip install pyinstaller
           pyinstaller app.spec
-          robocopy server\dist\app resources\server /E /XD whisper-bin
-        shell: cmd
-        working-directory: ${{ github.workspace }}
+          robocopy dist\app ..\resources\server /E /XD whisper-bin
+          exit 0
 
       - uses: actions/setup-node@v4
         with:
