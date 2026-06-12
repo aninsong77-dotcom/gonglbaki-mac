@@ -268,7 +268,7 @@ def delete_model(name: str):
 # whisper.cpp 모델 관련
 # ════════════════════════════════════════════════════════════════
 
-CPP_MODELS_DIR = Path.home() / "whisper-models"
+CPP_MODELS_DIR = Path(r"C:\whisper-models") if os.name == 'nt' else Path.home() / "whisper-models"
 
 CPP_MODEL_FILES = {
     "small":    "ggml-small.bin",
@@ -435,10 +435,15 @@ def download_models():
 
 def get_whisper_cpp_exe() -> Path:
     """whisper-cli 경로 반환"""
+    ext = '.exe' if os.name == 'nt' else ''
+    if os.name == 'nt':
+        fixed = Path(r"C:\whisper-bin") / f"whisper-cli{ext}"
+        if fixed.exists():
+            return fixed
     if getattr(sys, 'frozen', False):
-        return Path(sys.executable).resolve().parent / "whisper-bin" / "whisper-cli"
+        return Path(sys.executable).resolve().parent / "whisper-bin" / f"whisper-cli{ext}"
     else:
-        return Path(__file__).resolve().parent / "whisper-bin" / "whisper-cli"
+        return Path(__file__).resolve().parent / "whisper-bin" / f"whisper-cli{ext}"
 
 def convert_to_wav_eng(src_path: str) -> str:
     """

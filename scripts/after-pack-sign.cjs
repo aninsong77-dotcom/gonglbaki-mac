@@ -1,20 +1,17 @@
-// macOS 26(Tahoe) 시작 크래시 해결:
-// electron-builder가 .app을 만든 직후, DMG 생성 전에 실행됨.
-// ad-hoc 서명(-) + JIT 엔타이틀먼트로 V8 JIT 실행 허용.
 const { execSync } = require('child_process');
 const path = require('path');
 
-exports.default = async function afterPack(context) {
-    if (process.platform !== 'darwin') return;
+exports.default = async function afterSign(context) {
+  if (context.packager.platform.name !== 'mac') return;
 
-    const productName = context.packager.appInfo.productName;
-    const appPath = path.join(context.appOutDir, `${productName}.app`);
-    const entitlements = path.join(__dirname, '..', 'entitlements.mac.plist');
+  const { appOutDir, packager } = context;
+  const appName = packager.appInfo.productFilename;
+  const appPath = path.join(appOutDir, `${appName}.app`);
+  const entitlements = path.join(packager.projectDir, 'entitlements.mac.plist');
 
-    console.log(`[서명] ${appPath}`);
-    execSync(
-        `codesign --force --deep --sign - --entitlements "${entitlements}" --options runtime "${appPath}"`,
-        { stdio: 'inherit' }
-    );
-    console.log('[서명] 완료');
+  // JIT 권한 포함하여 앱 전체 재서명 (allow-jit, allow-unsigned-executable-memory)
+  execSync(
+    `codesign --deep --force --sign - --entitlements "${entitlements}" "${appPath}"`,
+    { stdio: 'inherit' }
+  );
 };

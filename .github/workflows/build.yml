@@ -1,0 +1,74 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Python 서버 빌드 (Mac)
+        run: |
+          cd server
+          pip install -r requirements-mac.txt
+          pyinstaller app-mac.spec
+          rsync -av --exclude='whisper-bin' dist/app/ ../resources/server/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Node 의존성 설치
+        run: npm install
+
+      - name: Mac DMG 빌드
+        run: npm run dist:mac
+
+      - name: DMG 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: 곤글박이-mac
+          path: release/*.dmg
+
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Python 서버 빌드 (Windows)
+        run: |
+          cd server
+          pip install -r requirements.txt
+          pip install pyinstaller
+          pyinstaller app.spec
+          robocopy server\dist\app resources\server /E /XD whisper-bin
+        shell: cmd
+        working-directory: ${{ github.workspace }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Node 의존성 설치
+        run: npm install
+
+      - name: Windows 설치파일 빌드
+        run: npm run dist:win
+
+      - name: 설치파일 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: 곤글박이-windows
+          path: release/*.exe

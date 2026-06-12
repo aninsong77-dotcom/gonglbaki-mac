@@ -1909,7 +1909,7 @@ export default function Index() {
                 await navigator.clipboard.writeText(data.content);
                 alert("디버그 파일이 클립보드에 복사됐어요!\n문의 시 붙여넣기(Ctrl+V)해서 보내주세요.");
               } catch {
-                alert("복사에 실패했어요. ~/gongulbaki_debug.txt 파일을 직접 열어주세요.");
+                alert("복사에 실패했어요. 홈 폴더의 gongulbaki_debug.txt 파일을 직접 열어주세요.");
               }
             }}>
             📋

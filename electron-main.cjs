@@ -35,12 +35,11 @@ function startPython() {
   let pyBin, pyArgs;
 
   if (isPackaged) {
-    // 패키징된 경우 → macOS 서버 바이너리 실행
-    pyBin = path.join(process.resourcesPath, "server", "app");
+    const ext = process.platform === 'win32' ? '.exe' : '';
+    pyBin = path.join(process.resourcesPath, "server", `app${ext}`);
     pyArgs = [];
   } else {
-    // 개발 모드 → python으로 app.py 실행
-    pyBin = "python3";
+    pyBin = process.platform === 'win32' ? 'python' : 'python3';
     pyArgs = [path.join(__dirname, "server", "app.py")];
   }
 
@@ -89,7 +88,7 @@ function createMainWindow() {
     show: false,
     opacity: 0,
     backgroundColor: "#f7f5f2",
-    icon: path.join(__dirname, "src", "assets", "gongulbaki-logo.png"),
+    icon: path.join(__dirname, "src", "assets", process.platform === 'win32' ? "gongulbaki-icon.ico" : "gongulbaki-logo.png"),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,

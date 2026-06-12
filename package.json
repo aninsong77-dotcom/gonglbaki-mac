@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "electron": "electron .",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://127.0.0.1:5577 && electron .\"",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",
@@ -35,7 +37,7 @@
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.2",
-    "electron": "^38.0.0",
+    "electron": "^32.3.3",
     "electron-builder": "latest",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
@@ -46,15 +48,30 @@
   "build": {
     "appId": "com.aninsong.gongulbaki",
     "productName": "곤글박이",
-    "afterPack": "./scripts/after-pack-sign.cjs",
+    "asar": false,
+    "afterSign": "./scripts/after-pack-sign.cjs",
     "mac": {
       "target": "dmg",
       "icon": "src/assets/gongulbaki-logo.png",
       "category": "public.app-category.productivity",
-      "identity": null
+      "identity": null,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "hardenedRuntime": false
     },
     "dmg": {
       "title": "곤글박이"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/gongulbaki-icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "곤글박이"
     },
     "files": [
       "dist/**/*",
