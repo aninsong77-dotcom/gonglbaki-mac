@@ -6,6 +6,7 @@ const fs = require("fs");
 const os = require("os");
 
 
+
 const LOG_PATH = path.join(os.homedir(), "gongulbaki_debug.txt");
 
 function electronLog(msg) {
@@ -50,8 +51,13 @@ function startPython() {
     env: { ...process.env, PORT: String(PORT), ELECTRON: "1" },
     stdio: "pipe",
   });
-  pyProcess.stdout.on("data", (d) => electronLog(`[서버] ${d.toString().trim()}`));
-  pyProcess.stderr.on("data", (d) => electronLog(`[서버 오류] ${d.toString().trim()}`));
+  const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*m/g, '');
+  pyProcess.stdout.on("data", (d) => electronLog(`[서버] ${stripAnsi(d.toString().trim())}`));
+  pyProcess.stderr.on("data", (d) => {
+    const msg = stripAnsi(d.toString().trim());
+    const isError = /error|exception|traceback|critical/i.test(msg);
+    electronLog(isError ? `[서버 오류] ${msg}` : `[서버] ${msg}`);
+  });
   pyProcess.on("exit", (code) => electronLog(`서버 종료 코드: ${code}`));
   pyProcess.on("error", (err) => electronLog(`서버 실행 실패: ${err.message}`));
 }

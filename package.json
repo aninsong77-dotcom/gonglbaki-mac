@@ -37,7 +37,7 @@
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.2",
-    "electron": "^32.3.3",
+    "electron": "^38.0.0",
     "electron-builder": "latest",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
@@ -48,16 +48,12 @@
   "build": {
     "appId": "com.aninsong.gongulbaki",
     "productName": "곤글박이",
-    "asar": false,
-    "afterSign": "./scripts/after-pack-sign.cjs",
+    "afterPack": "./scripts/after-pack-sign.cjs",
     "mac": {
       "target": "dmg",
       "icon": "src/assets/gongulbaki-logo.png",
       "category": "public.app-category.productivity",
-      "identity": null,
-      "entitlements": "entitlements.mac.plist",
-      "entitlementsInherit": "entitlements.mac.plist",
-      "hardenedRuntime": false
+      "identity": null
     },
     "dmg": {
       "title": "곤글박이"
