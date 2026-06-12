@@ -68,6 +68,8 @@ jobs:
         run: npm install
 
       - name: Windows 설치파일 빌드
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npm run dist:win
 
       - name: 설치파일 업로드

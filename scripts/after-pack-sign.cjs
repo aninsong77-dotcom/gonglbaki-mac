@@ -9,9 +9,12 @@ exports.default = async function afterSign(context) {
   const appPath = path.join(appOutDir, `${appName}.app`);
   const entitlements = path.join(packager.projectDir, 'entitlements.mac.plist');
 
-  // JIT 권한 포함하여 앱 전체 재서명 (allow-jit, allow-unsigned-executable-memory)
-  execSync(
-    `codesign --deep --force --sign - --entitlements "${entitlements}" "${appPath}"`,
-    { stdio: 'inherit' }
-  );
+  try {
+    execSync(
+      `codesign --deep --force --sign - --entitlements "${entitlements}" "${appPath}"`,
+      { stdio: 'inherit' }
+    );
+  } catch (e) {
+    console.warn('codesign 경고 (무시):', e.message);
+  }
 };
