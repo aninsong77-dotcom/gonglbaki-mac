@@ -69,12 +69,10 @@ jobs:
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: mac-jitless
-          name: 곤글박이 Mac (macOS 26 시작 크래시 수정 · JIT-less)
+          tag_name: mac-latest
+          name: 곤글박이 Mac (최신)
           body: |
-            macOS 26(Tahoe) 시작 즉시 크래시(EXC_BREAKPOINT) 수정.
-            원인: macOS 26의 강화된 MAP_JIT 규칙과 V8 JIT 충돌 → V8를 인터프리터 모드(--jitless)로 실행해 회피.
-            Electron 38.8.6 기준.
+            곤글박이 Mac 최신 빌드입니다. Electron 38 기반.
 
             설치: 아래 .dmg를 받아 열고, 곤글박이를 응용 프로그램으로 끌어다 놓으세요.
             (기존 곤글박이는 먼저 삭제 후 설치 권장. 첫 실행 "확인되지 않은 개발자" 뜨면: 앱 우클릭 → 열기 → 열기)
