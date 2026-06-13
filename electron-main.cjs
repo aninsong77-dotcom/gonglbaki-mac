@@ -1,9 +1,15 @@
 const { app, BrowserWindow, ipcMain, screen, clipboard } = require("electron");
 const path = require("path");
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const http = require("http");
 const fs = require("fs");
 const os = require("os");
+
+// macOS: 인터넷에서 다운로드한 앱의 격리 속성 자동 제거
+if (process.platform === 'darwin' && app.isPackaged) {
+  const appBundle = path.dirname(path.dirname(path.dirname(app.getPath('exe'))));
+  spawnSync('xattr', ['-dr', 'com.apple.quarantine', appBundle]);
+}
 
 
 
