@@ -5,11 +5,6 @@ const http = require("http");
 const fs = require("fs");
 const os = require("os");
 
-// macOS: 인터넷에서 다운로드한 앱의 격리 속성 자동 제거
-if (process.platform === 'darwin' && app.isPackaged) {
-  const appBundle = path.dirname(path.dirname(path.dirname(app.getPath('exe'))));
-  spawnSync('xattr', ['-dr', 'com.apple.quarantine', appBundle]);
-}
 
 
 
@@ -190,6 +185,11 @@ ipcMain.handle("window-is-maximized", () => mainWindow?.isMaximized() ?? false);
 ipcMain.handle("clipboard-write", (_, text) => { clipboard.writeText(text); });
 
 app.whenReady().then(() => {
+  // macOS: 격리 속성 자동 제거
+  if (process.platform === 'darwin' && app.isPackaged) {
+    const appBundle = path.dirname(path.dirname(path.dirname(app.getPath('exe'))));
+    spawnSync('xattr', ['-dr', 'com.apple.quarantine', appBundle]);
+  }
   startPython();
   createSplashWindow();
   // 서버 준비 완료 → 스플래시에 모델 다운로드 시작 신호
@@ -211,5 +211,5 @@ app.on("window-all-closed", () => {
 });
 
 app.on("activate", () => {
-  if (!mainWindow) createMainWindow();
+  if (app.isReady() && !mainWindow) createMainWindow();
 });
