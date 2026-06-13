@@ -57,7 +57,7 @@ jobs:
         run: sips -z 512 512 src/assets/gongulbaki-logo.png
 
       - name: Make install script executable
-        run: chmod +x resources/설치.command
+        run: chmod +x Install.command
 
       - name: Build DMG
         run: npm run build && npx electron-builder --publish never
