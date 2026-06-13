@@ -1,0 +1,3 @@
+#!/bin/bash
+xattr -dr com.apple.quarantine "/Applications/Gonglbaki.app" 2>/dev/null || true
+open "/Applications/Gonglbaki.app"

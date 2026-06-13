@@ -60,14 +60,5 @@ exports.default = async function afterPack(context) {
         console.log(`[ASAR 해시] 업데이트: ${actualHash.substring(0,16)}...`);
     }
 
-    // Install.command를 앱 출력 디렉토리에 복사
-    const scriptSrc = path.join(__dirname, '..', 'resources', 'Install.command');
-    const scriptDst = path.join(context.appOutDir, 'Install.command');
-    if (fs.existsSync(scriptSrc)) {
-        fs.copyFileSync(scriptSrc, scriptDst);
-        fs.chmodSync(scriptDst, 0o755);
-        console.log('[Install.command] 복사 완료');
-    }
-
     console.log('[afterPack] 완료');
 };
