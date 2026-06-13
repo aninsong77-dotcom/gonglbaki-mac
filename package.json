@@ -50,7 +50,7 @@
     "productName": "Gonglbaki",
     "afterPack": "./scripts/after-pack-sign.cjs",
     "mac": {
-      "target": "dmg",
+      "target": ["dmg", "dir"],
       "icon": "src/assets/gongulbaki-logo.png",
       "category": "public.app-category.productivity",
       "identity": null

@@ -56,17 +56,27 @@ jobs:
       - name: Resize icon to 512x512 (macOS requirement)
         run: sips -z 512 512 src/assets/gongulbaki-logo.png
 
-      - name: Make install script executable
-        run: chmod +x Install.command
-
       - name: Build DMG
-        run: npm run build && npx electron-builder --publish never
+        run: npx electron-builder --publish never
 
-      - name: Upload DMG
+      - name: Build PKG installer
+        run: |
+          chmod +x scripts/pkg-scripts/postinstall
+          pkgbuild \
+            --root "release/mac-arm64" \
+            --install-location "/Applications" \
+            --scripts scripts/pkg-scripts \
+            --identifier "com.aninsong.gongulbaki" \
+            --version "1.0.0" \
+            "release/Gonglbaki-1.0.0-arm64.pkg"
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: gongulbaki-mac-dmg
-          path: release/*.dmg
+          name: gongulbaki-mac
+          path: |
+            release/*.dmg
+            release/*.pkg
           retention-days: 7
 
       - name: Delete existing release
@@ -80,8 +90,17 @@ jobs:
           tag_name: mac-latest
           name: 곤글박이 Mac (최신)
           body: |
-            곤글박이 Mac 최신 빌드입니다. Electron 38 기반.
+            ## 곤글박이 Mac 최신 빌드 (Electron 38 기반)
 
-            설치: 아래 .dmg를 받아 열고, 곤글박이를 응용 프로그램으로 끌어다 놓으세요.
-            (기존 곤글박이는 먼저 삭제 후 설치 권장. 첫 실행 "확인되지 않은 개발자" 뜨면: 앱 우클릭 → 열기 → 열기)
-          files: release/*.dmg
+            ### 설치 방법 (PKG 권장 ✅)
+            1. **Gonglbaki-1.0.0-arm64.pkg** 다운로드
+            2. 파일 **우클릭 → 열기** (더블클릭 말고 우클릭!)
+            3. "확인되지 않은 개발자" 경고 → **열기** 클릭
+            4. 설치 마법사에서 **계속 → 계속 → 설치**
+            5. Mac 로그인 비밀번호 입력
+            6. 설치 완료 → 응용 프로그램에서 곤글박이 실행
+
+            > PKG 설치 시 quarantine이 자동 제거되어 이후 앱이 정상 실행됩니다.
+          files: |
+            release/*.pkg
+            release/*.dmg
