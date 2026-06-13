@@ -56,6 +56,9 @@ jobs:
       - name: Resize icon to 512x512 (macOS requirement)
         run: sips -z 512 512 src/assets/gongulbaki-logo.png
 
+      - name: Make install script executable
+        run: chmod +x resources/설치.command
+
       - name: Build DMG
         run: npm run build && npx electron-builder --publish never
 

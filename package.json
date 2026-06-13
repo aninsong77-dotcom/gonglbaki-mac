@@ -56,7 +56,12 @@
       "identity": null
     },
     "dmg": {
-      "title": "곤글박이"
+      "title": "곤글박이",
+      "contents": [
+        {"x": 130, "y": 220, "type": "file"},
+        {"x": 410, "y": 220, "type": "link", "path": "/Applications"},
+        {"x": 270, "y": 400, "type": "file", "path": "resources/설치.command"}
+      ]
     },
     "win": {
       "target": "nsis",
