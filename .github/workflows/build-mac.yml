@@ -36,7 +36,7 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/ggerganov/whisper.cpp whisper-src
           cd whisper-src
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
           cmake --build build --config Release -j$(sysctl -n hw.ncpu)
           mkdir -p ../resources/server/whisper-bin
           cp build/bin/whisper-cli ../resources/server/whisper-bin/whisper-cli
