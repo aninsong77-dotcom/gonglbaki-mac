@@ -36,11 +36,15 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/ggerganov/whisper.cpp whisper-src
           cd whisper-src
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release -j$(sysctl -n hw.ncpu)
           mkdir -p ../resources/server/whisper-bin
           cp build/bin/whisper-cli ../resources/server/whisper-bin/whisper-cli
           chmod +x ../resources/server/whisper-bin/whisper-cli
+          # dylib 파일 복사
+          find build -name "*.dylib" | xargs -I{} cp {} ../resources/server/whisper-bin/
+          # whisper-cli의 rpath를 @executable_path로 변경
+          install_name_tool -add_rpath @executable_path ../resources/server/whisper-bin/whisper-cli
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
