@@ -470,17 +470,27 @@ def convert_to_wav_eng(src_path: str) -> str:
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startupinfo.wShowWindow = subprocess.SW_HIDE
     try:
-        subprocess.run(
-            ["ffmpeg", "-y", "-i", src_path,
-             "-ar", "16000", "-ac", "1", "-f", "wav", wav_path],
-            capture_output=True, check=True, startupinfo=startupinfo
-        )
-        debug_log(f"ffmpeg 변환 성공: {wav_path}")
+        if os.name != "nt":
+            # macOS: afconvert는 기본 내장 도구 (ffmpeg 불필요)
+            # afconvert는 WAV 헤더 없이 raw PCM을 출력하므로 sox 없이도 whisper가 읽을 수 있는
+            # LinearPCM WAV로 변환
+            subprocess.run(
+                ["afconvert", "-f", "WAVE", "-d", "LEI16@16000", "-c", "1", src_path, wav_path],
+                capture_output=True, check=True
+            )
+            debug_log(f"afconvert 변환 성공: {wav_path}")
+        else:
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", src_path,
+                 "-ar", "16000", "-ac", "1", "-f", "wav", wav_path],
+                capture_output=True, check=True, startupinfo=startupinfo
+            )
+            debug_log(f"ffmpeg 변환 성공: {wav_path}")
     except FileNotFoundError:
-        debug_log("[오류] ffmpeg 실행파일을 찾을 수 없음 (PATH 확인 필요)")
+        debug_log("[오류] 변환 실행파일을 찾을 수 없음 (PATH 확인 필요)")
         raise Exception("파일 변환 도구를 찾을 수 없어요. 앱을 재설치 후 다시 시도해보세요.")
     except subprocess.CalledProcessError as e:
-        debug_log(f"[오류] ffmpeg 변환 실패: {e.stderr.decode('utf-8', errors='replace') if e.stderr else str(e)}")
+        debug_log(f"[오류] 변환 실패: {e.stderr.decode('utf-8', errors='replace') if e.stderr else str(e)}")
         raise Exception("음성 파일을 변환하지 못했어요. 파일이 손상됐거나 지원하지 않는 형식일 수 있어요. 앱을 재실행 후 다시 시도해보세요.")
     return wav_path
 
