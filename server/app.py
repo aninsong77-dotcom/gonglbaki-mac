@@ -319,7 +319,13 @@ def download_cpp_model(name: str):
 
     def do_download():
         try:
-            urllib.request.urlretrieve(url, dest)
+            if os.name != 'nt':
+                import subprocess
+                r = subprocess.run(['curl', '-L', '-o', str(dest), url], capture_output=True)
+                if r.returncode != 0:
+                    raise Exception(r.stderr.decode())
+            else:
+                urllib.request.urlretrieve(url, dest)
             q.put({"type": "done", "model": name})
         except Exception as e:
             q.put({"type": "error", "msg": str(e)})
