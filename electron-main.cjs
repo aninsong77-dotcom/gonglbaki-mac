@@ -63,12 +63,9 @@ function startPython() {
     electronLog(`서버 종료 코드: ${code}`);
     if (code === null && app.isPackaged && process.platform === 'darwin') {
       const appBundle = path.dirname(path.dirname(path.dirname(app.getPath('exe'))));
-      const script = `do shell script "xattr -dr com.apple.quarantine '${appBundle}'" with administrator privileges`;
-      const result = spawnSync('osascript', ['-e', script]);
-      if (result.status === 0) {
-        electronLog('[격리 해제] 완료, 서버 재시작');
-        startPython();
-      }
+      spawnSync('xattr', ['-dr', 'com.apple.quarantine', appBundle]);
+      electronLog('[격리 해제] 완료, 서버 재시작');
+      startPython();
     }
   });
   pyProcess.on("error", (err) => electronLog(`서버 실행 실패: ${err.message}`));
